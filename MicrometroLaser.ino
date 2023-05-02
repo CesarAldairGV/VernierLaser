@@ -7,8 +7,8 @@ Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 #define LOX2_ADDRESS 0x31
 
 // set the pins to shutdown
-#define SHT_LOX1 7
-#define SHT_LOX2 6
+#define SHT_LOX1 35
+#define SHT_LOX2 32
 
 // objects for the vl53l0x
 Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
@@ -18,20 +18,18 @@ Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
 VL53L0X_RangingMeasurementData_t measure1;
 VL53L0X_RangingMeasurementData_t measure2;
 
-#include <LiquidCrystal.h>
+//#include <LiquidCrystal.h>
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
-const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+//const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+//LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
-int ACCURACY_PIN = A7;
-int DEFAULT_ACCURACY = 29;
-int accuracy = 200;
+int accuracy = 25;
+int distance = 208;
 
 int count = 0;
-long sum1 = 0;
-long sum2 = 0;
+int sum1 = 0;
 
 void setID() {
   // all reset
@@ -52,6 +50,7 @@ void setID() {
     Serial.println(F("Failed to boot first VL53L0X"));
     while(1);
   }
+  lox1.configSensor(Adafruit_VL53L0X::VL53L0X_SENSE_HIGH_ACCURACY);
   delay(10);
 
   // activating LOX2
@@ -63,29 +62,17 @@ void setID() {
     Serial.println(F("Failed to boot second VL53L0X"));
     while(1);
   }
+  lox2.configSensor(Adafruit_VL53L0X::VL53L0X_SENSE_HIGH_ACCURACY);
 }
 
 void setUpLcd(){
-  lcd.begin(16, 2);
+  //lcd.begin(16, 2);
 }
 
-void printNumbers(float number1, float number2){
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(number1);
-  lcd.setCursor(0, 1);
-  lcd.print(number2);
-}
-
-void setUpAccuracy(){
-  int a = analogRead(A7);
-  accuracy = (a / 2) + DEFAULT_ACCURACY;
-  float string_accuracy = accuracy / 5.4;
-  Serial.print("Midiendo con una precision del ");
-  Serial.print(string_accuracy);
-  Serial.print(" % ( ");
-  Serial.print(accuracy);
-  Serial.println(" datos)");
+void printNumbers(float total){
+  //lcd.clear();
+  //lcd.setCursor(0, 0);
+  //lcd.print(total);
 }
 
 void setup() {
@@ -109,10 +96,6 @@ void setup() {
   Serial.println(F("Starting..."));
   setID();
   setUpLcd();
-  
-  // Valor de la precision
-  //pinMode(ACCURACY_PIN,INPUT);
-  //setUpAccuracy();
 }
 
 
@@ -123,20 +106,25 @@ void loop() {
   int mm1 = measure1.RangeMilliMeter;
   int mm2 = measure2.RangeMilliMeter;
 
+  //Serial.print(mm1);
+  //Serial.print(", ");
+  //Serial.println(mm2);
+
   if(count < accuracy){
     count++;
-    sum1 += mm1;
-    sum2 += mm2;
+    if(!mm1 == 0 && !mm2 == 0) {
+      sum1 += distance - mm1 - mm2;
+    }
   }else{
     float avarage1 = sum1 / (float) count;
-    float avarage2 = sum2 / (float) count;
-    Serial.print("Las distancias son: ");
-    Serial.print(avarage1);
-    Serial.print(", ");
-    Serial.println(avarage2);
-    printNumbers(avarage1,avarage2);
+    //printNumbers(avarage1,avarage2);
+    if(avarage1 <= 0){
+      avarage1 = 1;
+    }
+    Serial.print("El objeto mide: ");
+    Serial.println(avarage1);
     count = 0;
     sum1 = 0;
-    sum2 = 0;
+    //while(1);
   }
 }
