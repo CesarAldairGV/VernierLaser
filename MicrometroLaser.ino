@@ -1,14 +1,12 @@
 #include "Adafruit_VL53L0X.h"
 
-Adafruit_VL53L0X lox = Adafruit_VL53L0X();
-
 // address we will assign if dual sensor is present
 #define LOX1_ADDRESS 0x30
 #define LOX2_ADDRESS 0x31
 
 // set the pins to shutdown
-#define SHT_LOX1 35
-#define SHT_LOX2 32
+#define SHT_LOX1 7 // 35 for esp32 and mega
+#define SHT_LOX2 6 // 32 for esp32 and mega
 
 // objects for the vl53l0x
 Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
@@ -18,18 +16,16 @@ Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
 VL53L0X_RangingMeasurementData_t measure1;
 VL53L0X_RangingMeasurementData_t measure2;
 
-//#include <LiquidCrystal.h>
-
-// initialize the library by associating any needed LCD interface pin
-// with the arduino pin number it is connected to
-//const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
-//LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-
-int accuracy = 25;
+int accuracy = 5;
 int distance = 208;
 
 int count = 0;
 int sum1 = 0;
+
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27,16,2);
 
 void setID() {
   // all reset
@@ -65,16 +61,6 @@ void setID() {
   lox2.configSensor(Adafruit_VL53L0X::VL53L0X_SENSE_HIGH_ACCURACY);
 }
 
-void setUpLcd(){
-  //lcd.begin(16, 2);
-}
-
-void printNumbers(float total){
-  //lcd.clear();
-  //lcd.setCursor(0, 0);
-  //lcd.print(total);
-}
-
 void setup() {
   delay(50);
   Serial.begin(115200);
@@ -95,7 +81,13 @@ void setup() {
   
   Serial.println(F("Starting..."));
   setID();
-  setUpLcd();
+  // initialize the lcd.
+  lcd.init();                      
+  lcd.init();
+  // Print a message to the LCD.
+  lcd.backlight();
+  lcd.setCursor(3,0);
+  lcd.print("Iniciando");
 }
 
 
@@ -106,9 +98,9 @@ void loop() {
   int mm1 = measure1.RangeMilliMeter;
   int mm2 = measure2.RangeMilliMeter;
 
-  //Serial.print(mm1);
-  //Serial.print(", ");
-  //Serial.println(mm2);
+  Serial.print(mm1);
+  Serial.print(", ");
+  Serial.println(mm2);
 
   if(count < accuracy){
     count++;
@@ -117,7 +109,6 @@ void loop() {
     }
   }else{
     float avarage1 = sum1 / (float) count;
-    //printNumbers(avarage1,avarage2);
     if(avarage1 <= 0){
       avarage1 = 1;
     }
@@ -125,6 +116,12 @@ void loop() {
     Serial.println(avarage1);
     count = 0;
     sum1 = 0;
-    //while(1);
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print(avarage1 / 25.4);
+    lcd.print(" ''");
+    lcd.setCursor(0,1);
+    lcd.print(avarage1);
+    lcd.print(" mm");
   }
 }
